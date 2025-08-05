@@ -12,13 +12,14 @@ def init_firebase():
         return  # Avoid re-initialization
 
     firebase_config = dict(st.secrets["firebase"])
-
+    
+    # Fix private key formatting
+    firebase_config["private_key"] = firebase_config["private_key"].replace("\\n", "\n")
+    
     cred = credentials.Certificate(firebase_config)
     firebase_admin.initialize_app(cred, {
         'databaseURL': "https://questionpaper-c42fe-default-rtdb.firebaseio.com/"
     })
-
-init_firebase()
 
 # -------------------- Utility --------------------
 def save_result_as_pdf(student_name, standard, subject, score, total):
@@ -146,4 +147,5 @@ else:
         teacher_panel()
     else:
         student_panel()
+
 
