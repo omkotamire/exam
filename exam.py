@@ -1,18 +1,30 @@
 import streamlit as st
 import firebase_admin
-from firebase_admin import credentials, db, auth
+from firebase_admin import credentials, db
 import uuid
 from fpdf import FPDF
 import base64
 import os
-import json
+
 # -------------------- Firebase Init --------------------
-if not firebase_admin._apps:
+def init_firebase():
+    # Delete existing app to avoid duplicate init
+    if firebase_admin._apps:
+        firebase_admin.delete_app(firebase_admin.get_app())
+    
     firebase_config = dict(st.secrets["firebase"])
+    
+    # Debug: Check private key formatting
+    if "-----BEGIN PRIVATE KEY-----" not in firebase_config["private_key"]:
+        st.error("❌ Private key format issue. Ensure '\\n' is used for newlines.")
+        st.stop()
+
     cred = credentials.Certificate(firebase_config)
     firebase_admin.initialize_app(cred, {
         'databaseURL': f"https://{firebase_config['project_id']}.firebaseio.com"
     })
+
+init_firebase()
 
 # -------------------- Utility --------------------
 def save_result_as_pdf(student_name, standard, subject, score, total):
@@ -76,7 +88,7 @@ def login_user():
             return
         
         # 2️⃣ Student/Teacher login
-        users = db.reference("users").get()
+        users = db.reference("users").get() or {}
         for uid, user_data in users.items():
             if user_data.get("username") == username and user_data.get("password") == password:
                 st.session_state.user = {**user_data, "uid": uid}
@@ -144,4 +156,3 @@ else:
         teacher_panel()
     else:
         student_panel()
-
