@@ -5,7 +5,7 @@ import uuid
 from fpdf import FPDF
 import base64
 import os
-
+import json
 # -------------------- Firebase Init --------------------
 if not firebase_admin._apps:
     firebase_config = dict(st.secrets["firebase"])
@@ -144,3 +144,4 @@ else:
         teacher_panel()
     else:
         student_panel()
+
