@@ -8,16 +8,13 @@ import os
 
 # -------------------- Firebase Init --------------------
 def init_firebase():
-    # Delete existing app to avoid duplicate init
     if firebase_admin._apps:
-        firebase_admin.delete_app(firebase_admin.get_app())
-    
+        return  # Avoid re-initialization
+
     firebase_config = dict(st.secrets["firebase"])
-    
-    # Debug: Check private key formatting
-    if "-----BEGIN PRIVATE KEY-----" not in firebase_config["private_key"]:
-        st.error("❌ Private key format issue. Ensure '\\n' is used for newlines.")
-        st.stop()
+
+    # Fix private key (convert escaped \n to real newlines)
+    firebase_config["private_key"] = firebase_config["private_key"].replace("\\n", "\n")
 
     cred = credentials.Certificate(firebase_config)
     firebase_admin.initialize_app(cred, {
@@ -44,8 +41,7 @@ def save_result_as_pdf(student_name, standard, subject, score, total):
         b64 = base64.b64encode(f.read()).decode()
     os.remove(file_path)
 
-    href = f'<a href="data:application/octet-stream;base64,{b64}" download="result.pdf">📥 Download Result</a>'
-    return href
+    return f'<a href="data:application/octet-stream;base64,{b64}" download="result.pdf">📥 Download Result</a>'
 
 # -------------------- Admin Panel --------------------
 def admin_panel():
@@ -58,10 +54,9 @@ def admin_panel():
     standard = st.selectbox("Standard", ["1","2","3","4","5","6","7"]) if role == "Student" else None
 
     if st.button("Add User"):
-        username = parent_name.replace(" ", "").lower() if role == "Student" else name.replace(" ", "").lower()
-        password = contact  # Default password = contact number
+        username = (parent_name or name).replace(" ", "").lower()
+        password = contact
         
-        # Store in Firebase
         user_id = str(uuid.uuid4())
         db.reference("users").child(user_id).set({
             "name": name,
@@ -81,13 +76,11 @@ def login_user():
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        # 1️⃣ Admin login
         if username == "omkar" and password == "omkar":
             st.session_state.user = {"role": "Admin", "name": "Admin Omkar"}
             st.success("Welcome Admin Omkar")
             return
         
-        # 2️⃣ Student/Teacher login
         users = db.reference("users").get() or {}
         for uid, user_data in users.items():
             if user_data.get("username") == username and user_data.get("password") == password:
@@ -129,10 +122,10 @@ def student_panel():
         answers[qid] = ans
 
     if st.button("Submit"):
-        score = 0
-        for qid, qdata in questions.items():
-            if answers[qid] == qdata["options"][int(qdata["answer"]) - 1]:
-                score += 1
+        score = sum(
+            1 for qid, qdata in questions.items()
+            if answers[qid] == qdata["options"][int(qdata["answer"]) - 1]
+        )
 
         st.success(f"Your score: {score}/{len(questions)}")
         st.markdown(save_result_as_pdf(
