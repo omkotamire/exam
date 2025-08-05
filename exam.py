@@ -13,12 +13,9 @@ def init_firebase():
 
     firebase_config = dict(st.secrets["firebase"])
 
-    # Fix private key (convert escaped \n to real newlines)
-    firebase_config["private_key"] = firebase_config["private_key"].replace("\\n", "\n")
-
     cred = credentials.Certificate(firebase_config)
     firebase_admin.initialize_app(cred, {
-        'databaseURL': f"https://{firebase_config['project_id']}.firebaseio.com"
+        'databaseURL': "https://questionpaper-c42fe-default-rtdb.firebaseio.com/"
     })
 
 init_firebase()
@@ -149,3 +146,4 @@ else:
         teacher_panel()
     else:
         student_panel()
+
