@@ -1,6 +1,8 @@
+pip>=25.2
 streamlit
 requests
 firebase-admin
 requests
 fpdf
 json
+
